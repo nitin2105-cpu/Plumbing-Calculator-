@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a3a5c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BESS Calc">
+<meta name="description" content="Pipe and tube sizing calculator for BESS chiller — Dr. Nitin Roge, SRL">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>BESS Pipe & Tube Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1a3a5c;
+  --navy-dk: #0f2235;
+  --navy-lt: #2a527a;
+  --steel: #2e6da4;
+  --sky: #4a90d9;
+  --sky-lt: #d6e8f7;
+  --white: #ffffff;
+  --off: #f5f8fb;
+  --surface: #eef3f8;
+  --muted: #8aa0b8;
+  --text: #1a2d40;
+  --text2: #4a6070;
+  --border: #d0dce8;
+  --input-bg: #f0f5fa;
+  --yellow: #fff8e1;
+  --yellow-bdr: #f0c040;
+  --ok: #0f6e56; --ok-bg: #e1f5ee;
+  --warn: #854f0b; --warn-bg: #faeeda;
+  --danger: #a32d2d; --danger-bg: #fcebeb;
+  --info: #185fa5; --info-bg: #e6f1fb;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-xs: 5px;
+  --shadow: 0 2px 12px rgba(26,58,92,0.10);
+  --shadow-card: 0 4px 20px rgba(26,58,92,0.12);
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --bottom-nav: 64px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--navy-dk);font-family:var(--font);color:var(--text)}
+#app{display:flex;flex-direction:column;height:100%;height:100dvh}
+
+/* ── Top bar ── */
+.topbar{background:var(--navy);padding:env(safe-area-inset-top) 16px 0;flex-shrink:0}
+.topbar-inner{display:flex;align-items:center;gap:10px;padding:12px 0 10px}
+.srl-badge{background:rgba(255,255,255,0.15);color:#fff;font-size:10px;font-weight:600;padding:3px 8px;border-radius:var(--radius-xs);letter-spacing:.8px}
+.topbar-text{flex:1}
+.topbar-title{font-size:14px;font-weight:600;color:#fff;line-height:1.2}
+.topbar-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.offline-chip{font-size:9px;background:rgba(255,255,255,0.1);color:#90b8d0;padding:2px 7px;border-radius:20px;letter-spacing:.3px}
+
+/* ── Section tabs ── */
+.section-tabs{display:flex;background:var(--navy-dk);padding:10px 16px 0;gap:8px;flex-shrink:0}
+.stab{flex:1;padding:9px 0;font-size:13px;font-weight:500;text-align:center;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:rgba(255,255,255,0.06);color:var(--muted);border:none;cursor:pointer;transition:all .2s}
+.stab.act{background:var(--off);color:var(--navy);font-weight:600}
+
+/* ── Scroll area ── */
+.scroll-area{flex:1;overflow-y:auto;background:var(--off);padding:0 0 calc(var(--bottom-nav) + 16px);-webkit-overflow-scrolling:touch}
+.section{display:none;padding:14px 14px 0}
+.section.act{display:block}
+
+/* ── Cards ── */
+.card{background:var(--white);border-radius:var(--radius);padding:14px 14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-hd{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-hd-icon{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+
+/* ── Fields ── */
+.fld{margin-bottom:12px}
+.fld:last-child{margin-bottom:0}
+.fld label{display:block;font-size:11px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.fld input,.fld select{width:100%;background:var(--input-bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;font-size:14px;font-family:var(--font);color:var(--text);appearance:none;-webkit-appearance:none}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238aa0b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--sky);background:var(--white)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.frow3{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+
+/* ── Flow row ── */
+.flow-wrap{display:flex;gap:8px}
+.flow-wrap input{flex:2;min-width:0}
+.flow-wrap select{flex:1;min-width:0}
+.conv-text{font-size:10px;color:var(--muted);margin-top:4px;min-height:14px;font-family:var(--mono)}
+
+/* ── Fluid props strip ── */
+.props-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.prop-chip{background:var(--surface);border-radius:var(--radius-sm);padding:7px 6px;text-align:center}
+.prop-chip-l{font-size:9px;color:var(--muted);margin-bottom:2px}
+.prop-chip-v{font-size:12px;font-weight:600;color:var(--navy);font-family:var(--mono)}
+.prop-chip-u{font-size:8px;color:var(--muted)}
+
+/* ── Calc button ── */
+.calc-btn{width:100%;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);padding:14px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:4px;letter-spacing:.2px;transition:background .15s;active:background:var(--navy-lt)}
+.calc-btn:active{background:var(--navy-lt)}
+
+/* ── Results ── */
+.status-pill{display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;margin-bottom:12px}
+.status-pill.ok{background:var(--ok-bg);color:var(--ok)}
+.status-pill.warn{background:var(--warn-bg);color:var(--warn)}
+.status-pill.danger{background:var(--danger-bg);color:var(--danger)}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ok .status-dot{background:var(--ok)}.warn .status-dot{background:var(--warn)}.danger .status-dot{background:var(--danger)}
+
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.metric-card{background:var(--surface);border-radius:var(--radius-sm);padding:11px 12px}
+.metric-label{font-size:10px;color:var(--muted);margin-bottom:3px}
+.metric-value{font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.metric-unit{font-size:10px;color:var(--muted);margin-top:1px}
+.m-ok .metric-value{color:var(--ok)}.m-warn .metric-value{color:var(--warn)}.m-danger .metric-value{color:var(--danger)}.m-info .metric-value{color:var(--info)}
+
+.detail-table{width:100%;border-collapse:collapse;font-size:12px}
+.detail-table td{padding:6px 2px;border-bottom:1px solid var(--surface);vertical-align:top}
+.detail-table td:first-child{color:var(--muted);width:45%;font-size:11px}
+.detail-table td:last-child{font-family:var(--mono);color:var(--text);font-weight:500}
+.detail-table tr:last-child td{border-bottom:none}
+
+.scan-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-sm);margin-top:8px}
+.scan-table{width:100%;border-collapse:collapse;font-size:11px;min-width:340px}
+.scan-table th{background:var(--surface);font-weight:600;font-size:10px;color:var(--muted);padding:7px 6px;text-align:left;white-space:nowrap}
+.scan-table td{padding:6px 6px;border-bottom:1px solid var(--surface);color:var(--text);white-space:nowrap;font-family:var(--mono)}
+.scan-table tr.rec td{background:#f0f9f5}
+.scan-table tr.rec td:first-child{font-weight:600;color:var(--ok)}
+
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;font-family:var(--font)}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-warn{background:var(--warn-bg);color:var(--warn)}.b-danger{background:var(--danger-bg);color:var(--danger)}.b-info{background:var(--info-bg);color:var(--info)}
+
+.divider{height:1px;background:var(--surface);margin:12px 0}
+.sub-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+
+/* ── Mat info ── */
+.mat-box{background:var(--surface);border-radius:var(--radius-sm);padding:10px 11px;margin-top:8px;font-size:11px;line-height:1.6;color:var(--text2)}
+
+/* ── Dim table ── */
+.dim-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+.dim-table th{font-size:10px;color:var(--muted);font-weight:600;padding:5px 4px;text-align:center;border-bottom:1.5px solid var(--border)}
+.dim-table td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--surface);font-family:var(--mono)}
+.dim-table tr.sel td{background:var(--sky-lt);font-weight:600}
+
+/* ── Bottom nav ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--bottom-nav);background:var(--white);border-top:1.5px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:100;box-shadow:0 -4px 16px rgba(26,58,92,0.08)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;cursor:pointer;color:var(--muted);font-size:9px;font-weight:500;font-family:var(--font);letter-spacing:.3px;padding:8px 0;transition:color .15s}
+.nav-btn.act{color:var(--navy)}
+.nav-icon{font-size:20px;line-height:1}
+.nav-btn.act .nav-icon{transform:scale(1.1)}
+
+/* ── Install prompt ── */
+.install-bar{background:var(--navy-lt);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px;flex-shrink:0}
+.install-bar button{background:#fff;color:var(--navy);border:none;border-radius:var(--radius-xs);padding:6px 12px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;white-space:nowrap}
+.install-bar .close-btn{background:transparent;color:rgba(255,255,255,.6);border:none;font-size:16px;cursor:pointer;padding:0;margin-left:auto;flex-shrink:0}
+
+/* ── About page ── */
+.about-card{background:var(--white);border-radius:var(--radius);padding:20px;margin-bottom:12px;box-shadow:var(--shadow)}
+.about-logo{background:var(--navy);color:#fff;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;text-align:center}
+.about-logo-title{font-size:16px;font-weight:700;letter-spacing:.5px}
+.about-logo-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.about-section-title{font-size:12px;font-weight:600;color:var(--navy);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.5px}
+.about-item{padding:8px 0;border-bottom:1px solid var(--surface);font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.about-item:last-child{border-bottom:none}
+.about-item-label{color:var(--text2);font-size:12px}
+.about-item-value{color:var(--text);font-weight:500;text-align:right;font-size:12px}
+.formula-box{background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px}
+.formula-name{font-size:11px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.formula-eq{font-family:var(--mono);font-size:11px;color:var(--info);line-height:1.6}
+.formula-note{font-size:10px;color:var(--muted);margin-top:3px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Install prompt -->
+<div class="install-bar" id="install-bar" style="display:none">
+  <span>📲 Add to Home Screen for offline use</span>
+  <button id="install-btn">Install</button>
+  <button class="close-btn" onclick="document.getElementById('install-bar').style.display='none'">✕</button>
+</div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="srl-badge">SRL</div>
+    <div class="topbar-text">
+      <div class="topbar-title">BESS Pipe & Tube Calculator</div>
+      <div class="topbar-sub">Dr. Nitin Roge · Shree Refrigeration Limited</div>
+    </div>
+    <div class="offline-chip">OFFLINE</div>
+  </div>
+</div>
+
+<!-- Section tabs -->
+<div class="section-tabs">
+  <button class="stab act" onclick="switchSection('pipe',this)" id="tab-pipe">⬡ Pipe</button>
+  <button class="stab" onclick="switchSection('tube',this)" id="tab-tube">◎ Tube</button>
+  <button class="stab" onclick="switchSection('about',this)" id="tab-about">ℹ Ref</button>
+</div>
+
+<!-- Scroll area -->
+<div class="scroll-area">
+
+<!-- ═══════════════════════════════════ PIPE SECTION ═══ -->
+<div class="section act" id="sec-pipe">
+
+  <div class="card">
+    <div class="card-hd"><span class="card-hd-icon" style="background:#e1f5ee">💧</span>Fluid</div>
+    <div class="fld">
+      <label>Fluid type</label>
+      <select id="p-fluid" onchange="pFluidChange()">
+        <option value="water">Water</option>
+        <option value="air">Air</option>
+        <option value="EG">Water + Ethylene Glycol (EG)</option>
+        <option value="PG">Water + Propylene Glycol (PG)</option>
+      </select>
+    </div>
+    <div class="fld" id="p-gly-row" style="display:none">
+      <label>Glycol concentration (% vol)</label>
+      <input type="number" id="p-gly" value="30" min="0" max="60" step="5" inputmode="decimal" oninput="pUpdateProps()">
+    </div>
+    <div class="fld">
+      <label>Temperature (°C)</label>
+      <input type="number" id="p-temp" value="10" min="-20" max="60" inputmode="decimal" oninput="pUpdateProps()">
+    </div>
+    <div class="props-strip">
+      <div class="prop-chip"><div class="prop-chip-l">ρ</div><div class="prop-chip-v" id="p-rho">—</div><div class="prop-chip-u">kg/m³</div></div>
+      <div class="prop-chip"><div class="prop-chip-l">μ</div><div class="prop-chip-v" id="p-mu">—</div><div class="prop-chip-u">mPa·s</div></div>
+      <div class="prop-chip"><div class="prop-chip-l">Cp</div><div class="prop-chip-v" id="p-cp">—</div><div class="prop-chip-u">kJ/kg·K</div></div>
+      <div class="prop-chip"><div class="prop-chip-l">k</div><div class="prop-chip-v" id="p-k">—</div><div class="prop-chip-u">W/m·K</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span class="card-hd-icon" style="background:#e6f1fb">⟳</span>Flow inputs</div>
+    <div class="fld">
+      <label>Flow rate</label>
+      <div class="flow-wrap">
+        <input type="number" id="p-flow" value="2.5" min="0.001" step="0.1" inputmode="decimal" oninput="pConvert()">
+        <select id="p-funit" onchange="pConvert()">
+          <option value="kgs">kg/s</option>
+          <option value="m3hr">m³/hr</option>
+          <option value="Lmin">L/min</option>
+        </select>
+      </div>
+      <div class="conv-text" id="p-conv"></div>
+    </div>
+    <div class="frow">
+      <div class="fld"><label>Pipe length (m)</label><input type="number" id="p-len" value="10" min="0.1" inputmode="decimal"></div>
+      <div class="fld"><label>Minor loss ΣK</label><input type="number" id="p-k2" value="5" min="0" inputmode="decimal"></div>
+    </div>
+    <div class="frow">
+      <div class="fld">
+        <label>Nominal size (DN)</label>
+        <select id="p-dn" onchange="renderPipeDimTable()">
+          <option value="15">DN 15 (½")</option><option value="20">DN 20 (¾")</option>
+          <option value="25">DN 25 (1")</option><option value="32">DN 32 (1¼")</option>
+          <option value="40">DN 40 (1½")</option><option value="50" selected>DN 50 (2")</option>
+          <option value="65">DN 65 (2½")</option><option value="80">DN 80 (3")</option>
+          <option value="100">DN 100 (4")</option><option value="125">DN 125 (5")</option>
+          <option value="150">DN 150 (6")</option><option value="200">DN 200 (8")</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Schedule</label>
+        <select id="p-sch" onchange="renderPipeDimTable()">
+          <option value="5S">Sch 5S</option><option value="10S">Sch 10S</option>
+          <option value="40S" selected>40S / Std</option>
+          <option value="80S">80S / XS</option><option value="160">Sch 160</option>
+        </select>
+      </div>
+    </div>
+    <button class="calc-btn" onclick="pCalc()">Calculate →</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span class="card-hd-icon" style="background:#faeeda">⬡</span>Material</div>
+    <div class="fld">
+      <label>Pipe material</label>
+      <select id="p-mat" onchange="pMatChange()">
+        <optgroup label="Stainless Steel — ASME B36.19M">
+          <option value="SS304">SS 304 — TP304</option>
+          <option value="SS316" selected>SS 316 — TP316</option>
+          <option value="SS316L">SS 316L — TP316L</option>
+        </optgroup>
+        <optgroup label="Carbon Steel — ASME B36.10M">
+          <option value="CSA106">CS A106 Gr B</option>
+          <option value="CSA53">CS A53 Gr B</option>
+        </optgroup>
+        <optgroup label="Copper-Nickel">
+          <option value="CuNi90">Cu-Ni 90/10 (C70600)</option>
+          <option value="CuNi70">Cu-Ni 70/30 (C71500)</option>
+        </optgroup>
+        <optgroup label="Polymer">
+          <option value="CPVC">CPVC</option>
+          <option value="PVC">uPVC</option>
+          <option value="Nylon">Nylon PA6/PA66</option>
+          <option value="HDPE">HDPE PE100</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="mat-box" id="p-mat-info"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">Pipe dimensions — ASME B36.10M / B36.19M</div>
+    <div id="p-dim-tbl"></div>
+  </div>
+
+  <div id="p-results" style="display:none">
+    <div class="card">
+      <div class="card-hd">Results</div>
+      <div id="p-status"></div>
+      <div class="metrics-grid" id="p-metrics"></div>
+      <div class="divider"></div>
+      <div class="sub-label">Selected pipe — detail</div>
+      <table class="detail-table"><tbody id="p-detail"></tbody></table>
+      <div class="divider"></div>
+      <div class="sub-label">DN scan — Sch 40S ★=recommended</div>
+      <div class="scan-wrap"><table class="scan-table">
+        <thead><tr><th>DN</th><th>ID</th><th>Vel</th><th>ΔP/m</th><th>Re</th></tr></thead>
+        <tbody id="p-scan"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ TUBE SECTION ═══ -->
+<div class="section" id="sec-tube">
+
+  <div class="card">
+    <div class="card-hd"><span class="card-hd-icon" style="background:#e1f5ee">💧</span>Fluid</div>
+    <div class="fld">
+      <label>Fluid type</label>
+      <select id="t-fluid" onchange="tFluidChange()">
+        <option value="water">Water</option>
+        <option value="air">Air</option>
+        <option value="EG">Water + Ethylene Glycol (EG)</option>
+        <option value="PG">Water + Propylene Glycol (PG)</option>
+        <option value="R410A">Refrigerant R410A (liquid)</option>
+        <option value="R134a">Refrigerant R134a (liquid)</option>
+      </select>
+    </div>
+    <div class="fld" id="t-gly-row" style="display:none">
+      <label>Glycol concentration (% vol)</label>
+      <input type="number" id="t-gly" value="30" min="0" max="60" step="5" inputmode="decimal" oninput="tUpdateProps()">
+    </div>
+    <div class="fld">
+      <label>Temperature (°C)</label>
+      <input type="number" id="t-temp" value="10" min="-40" max="80" inputmode="decimal" oninput="tUpdateProps()">
+    </div>
+    <div class="props-strip">
+      <div class="prop-chip"><div class="prop-chip-l">ρ</div><div class="prop-chip-v" id="t-rho">—</div><div class="prop-chip-u">kg/m³</div></div>
+      <div class="prop-chip"><div class="prop-chip-l">μ</div><div class="prop-chip-v" id="t-mu">—</div><div class="prop-chip-u">mPa·s</div></div>
+      <div class="prop-chip"><div class="prop-chip-l">Cp</div><div class="prop-chip-v" id="t-cp">—</div><div class="prop-chip-u">kJ/kg·K</div></div>
+      <div class="prop-chip"><div class="prop-chip-l">k</div><div class="prop-chip-v" id="t-k">—</div><div class="prop-chip-u">W/m·K</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span class="card-hd-icon" style="background:#e6f1fb">⟳</span>Flow inputs</div>
+    <div class="fld">
+      <label>Flow rate</label>
+      <div class="flow-wrap">
+        <input type="number" id="t-flow" value="0.15" min="0.0001" step="0.01" inputmode="decimal" oninput="tConvert()">
+        <select id="t-funit" onchange="tConvert()">
+          <option value="kgs">kg/s</option>
+          <option value="m3hr">m³/hr</option>
+          <option value="Lmin">L/min</option>
+        </select>
+      </div>
+      <div class="conv-text" id="t-conv"></div>
+    </div>
+    <div class="frow">
+      <div class="fld"><label>Tube length (m)</label><input type="number" id="t-len" value="3" min="0.1" inputmode="decimal"></div>
+      <div class="fld"><label>Minor loss ΣK</label><input type="number" id="t-k2" value="3" min="0" inputmode="decimal"></div>
+    </div>
+    <button class="calc-btn" onclick="tCalc()">Calculate →</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span class="card-hd-icon" style="background:#faeeda">⬡</span>Standard & material</div>
+    <div class="fld">
+      <label>Standard</label>
+      <select id="t-std">
+        <option value="A269">ASTM A269/A213 — SS seamless</option>
+        <option value="B280">ASTM B280 — Copper ACR</option>
+        <option value="EN10216">EN 10216-5 — SS European</option>
+        <option value="DIN2391">DIN 2391 — Precision steel</option>
+        <option value="IS3589">IS 3589/1239 — Indian std</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label>Material</label>
+      <select id="t-mat" onchange="tMatChange()">
+        <option value="SS304t">SS 304 (1.4301)</option>
+        <option value="SS316t" selected>SS 316 (1.4401)</option>
+        <option value="SS316Lt">SS 316L (1.4404)</option>
+        <option value="Cut">Copper ACR (C12200)</option>
+        <option value="CuNi90t">Cu-Ni 90/10 (C70600)</option>
+        <option value="CSt">Carbon Steel</option>
+        <option value="Ti2t">Titanium Grade 2</option>
+        <option value="PVCt">uPVC</option>
+        <option value="CPVCt">CPVC</option>
+        <option value="NY12t">Nylon 12 (PA12)</option>
+      </select>
+    </div>
+    <div class="mat-box" id="t-mat-info"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">Tube geometry</div>
+    <div class="fld">
+      <label>Sizing method</label>
+      <select id="t-method" onchange="tMethodChange()">
+        <option value="OD_t">OD × Wall thickness</option>
+        <option value="ID_only">Direct ID entry</option>
+      </select>
+    </div>
+    <div id="t-OD-inputs">
+      <div class="frow">
+        <div class="fld">
+          <label>OD (mm)</label>
+          <select id="t-od" onchange="tGeoDisplay()">
+            <option value="6">6.0</option><option value="8">8.0</option>
+            <option value="10">10.0</option><option value="12">12.0</option>
+            <option value="12.7">12.7 (½")</option><option value="15">15.0</option>
+            <option value="15.88">15.88 (⅝")</option><option value="19.05">19.05 (¾")</option>
+            <option value="22">22.0</option><option value="25" selected>25.0</option>
+            <option value="25.4">25.4 (1")</option><option value="28">28.0</option>
+            <option value="31.75">31.75 (1¼")</option><option value="35">35.0</option>
+            <option value="38">38.0</option><option value="38.1">38.1 (1½")</option>
+            <option value="42">42.0</option><option value="50">50.0</option>
+            <option value="50.8">50.8 (2")</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Wall t (mm)</label>
+          <select id="t-wt" onchange="tGeoDisplay()">
+            <option value="0.5">0.5</option><option value="0.7">0.7</option>
+            <option value="0.8">0.8</option><option value="1.0" selected>1.0</option>
+            <option value="1.2">1.2</option><option value="1.5">1.5</option>
+            <option value="1.6">1.6</option><option value="2.0">2.0</option>
+            <option value="2.5">2.5</option><option value="3.0">3.0</option>
+            <option value="3.2">3.2</option><option value="4.0">4.0</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="t-ID-inputs" style="display:none">
+      <div class="fld"><label>ID — inner diameter (mm)</label>
+        <input type="number" id="t-id-direct" value="10" min="1" inputmode="decimal" oninput="tGeoDisplay()">
+      </div>
+    </div>
+    <div id="t-geo-display" style="margin-top:8px"></div>
+  </div>
+
+  <div id="t-results" style="display:none">
+    <div class="card">
+      <div class="card-hd">Results</div>
+      <div id="t-status"></div>
+      <div class="metrics-grid" id="t-metrics"></div>
+      <div class="divider"></div>
+      <div class="sub-label">Selected tube — detail</div>
+      <table class="detail-table"><tbody id="t-detail"></tbody></table>
+      <div class="divider"></div>
+      <div class="sub-label">OD scan — same wall ★=recommended</div>
+      <div class="scan-wrap"><table class="scan-table">
+        <thead><tr><th>OD</th><th>ID</th><th>Vel</th><th>ΔP/m</th><th>Re</th></tr></thead>
+        <tbody id="t-scan"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ ABOUT / REF SECTION ═══ -->
+<div class="section" id="sec-about">
+  <div class="about-card">
+    <div class="about-logo">
+      <div class="about-logo-title">BESS Pipe & Tube Calculator</div>
+      <div class="about-logo-sub">Shree Refrigeration Limited · BESS Chiller Division</div>
+    </div>
+    <div class="about-section-title">Author</div>
+    <div class="about-item"><span class="about-item-label">Name</span><span class="about-item-value">Dr. Nitin Hanuman Roge</span></div>
+    <div class="about-item"><span class="about-item-label">Designation</span><span class="about-item-value">AGM — NPD & R&D · Head BESS</span></div>
+    <div class="about-item"><span class="about-item-label">Qualification</span><span class="about-item-value">Ph.D. Thermal Engg, IIT Bombay</span></div>
+    <div class="about-item"><span class="about-item-label">Version</span><span class="about-item-value">1.0 · 2025</span></div>
+    <div class="about-section-title">Standards</div>
+    <div class="about-item"><span class="about-item-label">Pipe (SS)</span><span class="about-item-value">ASME B36.19M</span></div>
+    <div class="about-item"><span class="about-item-label">Pipe (CS)</span><span class="about-item-value">ASME B36.10M</span></div>
+    <div class="about-item"><span class="about-item-label">Tube (SS)</span><span class="about-item-value">ASTM A269 / A213</span></div>
+    <div class="about-item"><span class="about-item-label">Tube (Cu)</span><span class="about-item-value">ASTM B280 ACR</span></div>
+    <div class="about-item"><span class="about-item-label">Tube (EU)</span><span class="about-item-value">EN 10216-5</span></div>
+    <div class="about-item"><span class="about-item-label">Tube (DE)</span><span class="about-item-value">DIN 2391</span></div>
+    <div class="about-item"><span class="about-item-label">Tube (IN)</span><span class="about-item-value">IS 3589 / IS 1239</span></div>
+    <div class="about-item"><span class="about-item-label">Fluid props</span><span class="about-item-value">ASHRAE Fundamentals 2017</span></div>
+  </div>
+
+  <div class="about-card">
+    <div class="about-section-title" style="margin-top:0">Key formulas</div>
+    <div class="formula-box">
+      <div class="formula-name">Flow velocity</div>
+      <div class="formula-eq">V = ṁ / (ρ × A)</div>
+      <div class="formula-note">V m/s · ṁ kg/s · ρ kg/m³ · A = πD²/4 m²</div>
+    </div>
+    <div class="formula-box">
+      <div class="formula-name">Reynolds number</div>
+      <div class="formula-eq">Re = ρ × V × D / μ</div>
+      <div class="formula-note">Laminar Re&lt;2300 · Transitional 2300–4000 · Turbulent &gt;4000</div>
+    </div>
+    <div class="formula-box">
+      <div class="formula-name">Darcy-Weisbach pressure drop</div>
+      <div class="formula-eq">ΔP = f × (L/D) × (ρV²/2)</div>
+      <div class="formula-note">ΔP_minor = K × ρV²/2 · ΔP_total = ΔP_friction + ΔP_minor</div>
+    </div>
+    <div class="formula-box">
+      <div class="formula-name">Churchill friction factor (1977)</div>
+      <div class="formula-eq">f = 8[(8/Re)¹²+1/(A+B)^1.5]^(1/12)</div>
+      <div class="formula-note">Single equation · all Re · all ε/D · AIChE J. 23(2) 1977</div>
+    </div>
+    <div class="formula-box">
+      <div class="formula-name">Recommended velocity — BESS loops</div>
+      <div class="formula-eq">Liquid: 0.5 – 2.0 m/s (max 3.0)</div>
+      <div class="formula-note">Air: 3–8 m/s · Refrigerant liquid: 0.5–1.5 m/s</div>
+    </div>
+  </div>
+
+  <div class="about-card">
+    <div class="about-section-title" style="margin-top:0">Pipe roughness ε</div>
+    <div class="about-item"><span class="about-item-label">SS 304 / 316 / CS</span><span class="about-item-value">0.046 mm</span></div>
+    <div class="about-item"><span class="about-item-label">SS tubes (drawn)</span><span class="about-item-value">0.002 mm</span></div>
+    <div class="about-item"><span class="about-item-label">Copper / Cu-Ni</span><span class="about-item-value">0.0015 mm</span></div>
+    <div class="about-item"><span class="about-item-label">Titanium Gr 2</span><span class="about-item-value">0.0005 mm</span></div>
+    <div class="about-item"><span class="about-item-label">Polymer (PVC/CPVC/Nylon)</span><span class="about-item-value">0.0015 mm</span></div>
+  </div>
+</div>
+
+</div><!-- scroll-area -->
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <button class="nav-btn act" id="nav-pipe" onclick="switchSection('pipe',document.getElementById('tab-pipe'))">
+    <span class="nav-icon">⬡</span>Pipe
+  </button>
+  <button class="nav-btn" id="nav-tube" onclick="switchSection('tube',document.getElementById('tab-tube'))">
+    <span class="nav-icon">◎</span>Tube
+  </button>
+  <button class="nav-btn" id="nav-about" onclick="switchSection('about',document.getElementById('tab-about'))">
+    <span class="nav-icon">ℹ</span>Reference
+  </button>
+</div>
+
+</div><!-- app -->
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────
+const PIPE_DB={15:{OD:21.3,t:{5:1.65,10:2.11,40:2.77,80:3.73,160:4.78}},20:{OD:26.7,t:{5:1.65,10:2.11,40:2.87,80:3.91,160:5.56}},25:{OD:33.4,t:{5:1.65,10:2.77,40:3.38,80:4.55,160:6.35}},32:{OD:42.2,t:{5:1.65,10:2.77,40:3.56,80:4.85,160:6.35}},40:{OD:48.3,t:{5:1.65,10:2.77,40:3.68,80:5.08,160:7.14}},50:{OD:60.3,t:{5:1.65,10:2.77,40:3.91,80:5.54,160:8.74}},65:{OD:73.0,t:{5:2.11,10:3.05,40:5.16,80:7.01,160:9.53}},80:{OD:88.9,t:{5:2.11,10:3.05,40:5.49,80:7.62,160:11.13}},100:{OD:114.3,t:{5:2.77,10:3.05,40:6.02,80:8.56,160:13.49}},125:{OD:141.3,t:{5:2.77,10:3.40,40:6.55,80:9.53,160:15.88}},150:{OD:168.3,t:{5:2.77,10:3.40,40:7.11,80:10.97,160:18.26}},200:{OD:219.1,t:{5:2.77,10:3.76,40:8.18,80:12.70,160:23.01}}};
+const DN_LIST=[15,20,25,32,40,50,65,80,100,125,150,200];
+const SCH_MAP={'5S':5,'10S':10,'40S':40,'80S':80,'160':160};
+const TUBE_ODS=[6,8,10,12,12.7,15,15.88,19.05,22,25,25.4,28,31.75,35,38,38.1,42,50,50.8];
+
+const PIPE_MAT={
+  SS304:{n:'SS 304',std:'ASME B36.19M / A312 TP304',maxT:870,minT:-200,corr:'Excellent',eps:0.046,note:'General BESS; chloride sensitive >50°C'},
+  SS316:{n:'SS 316',std:'ASME B36.19M / A312 TP316',maxT:870,minT:-200,corr:'Excellent — Mo grade',eps:0.046,note:'Recommended for BESS glycol loops'},
+  SS316L:{n:'SS 316L',std:'ASME B36.19M / A312 TP316L',maxT:870,minT:-200,corr:'Excellent',eps:0.046,note:'Best for welded BESS piping'},
+  CSA106:{n:'CS A106 Gr B',std:'ASME B36.10M / ASTM A106',maxT:425,minT:-29,corr:'Poor — coat/inhibit',eps:0.046,note:'Not recommended for cold glycol loops'},
+  CSA53:{n:'CS A53 Gr B',std:'ASME B36.10M / ASTM A53',maxT:370,minT:-29,corr:'Poor',eps:0.046,note:'Inhibited glycol only'},
+  CuNi90:{n:'Cu-Ni 90/10',std:'ASTM B466 C70600',maxT:260,minT:-200,corr:'Excellent — seawater',eps:0.0015,note:'Marine BESS loops'},
+  CuNi70:{n:'Cu-Ni 70/30',std:'ASTM B466 C71500',maxT:315,minT:-200,corr:'Excellent',eps:0.0015,note:'High-velocity marine loops'},
+  CPVC:{n:'CPVC',std:'ASTM F441',maxT:93,minT:-40,corr:'Excellent',eps:0.0015,note:'Max 93°C'},
+  PVC:{n:'uPVC',std:'ASTM D1785',maxT:60,minT:0,corr:'Excellent',eps:0.0015,note:'Max 60°C; no sub-zero'},
+  Nylon:{n:'Nylon PA6/PA66',std:'ISO 1874',maxT:110,minT:-40,corr:'Good',eps:0.0015,note:'Low weight; moisture absorption'},
+  HDPE:{n:'HDPE PE100',std:'ISO 4427',maxT:60,minT:-50,corr:'Excellent',eps:0.0015,note:'Flexible; butt-fusion'}
+};
+const TUBE_MAT={
+  SS304t:{n:'SS 304',std:'ASTM A269/A213 TP304',maxT:870,minT:-200,corr:'Excellent',eps:0.002,note:'HX & instrumentation'},
+  SS316t:{n:'SS 316',std:'ASTM A269/A213 TP316',maxT:870,minT:-200,corr:'Excellent — Mo grade',eps:0.002,note:'Best for glycol & process'},
+  SS316Lt:{n:'SS 316L',std:'ASTM A269/A213 TP316L',maxT:870,minT:-200,corr:'Excellent',eps:0.002,note:'Low C; welded tube assemblies'},
+  Cut:{n:'Copper ACR',std:'ASTM B280 / EN 12735',maxT:200,minT:-200,corr:'Excellent',eps:0.0015,note:'ACR refrigerant & glycol'},
+  CuNi90t:{n:'Cu-Ni 90/10',std:'ASTM B111 C70600',maxT:260,minT:-200,corr:'Excellent — seawater',eps:0.0015,note:'Condenser & marine tubes'},
+  CSt:{n:'Carbon Steel',std:'DIN 2391 / IS 3589',maxT:400,minT:-29,corr:'Poor',eps:0.046,note:'Coat surface for liquid service'},
+  Ti2t:{n:'Titanium Gr 2',std:'ASTM B338 / ASME SB-338',maxT:315,minT:-200,corr:'Outstanding',eps:0.0005,note:'High corrosion; seawater BESS'},
+  PVCt:{n:'uPVC',std:'DIN 8061 / IS 4985',maxT:60,minT:0,corr:'Excellent',eps:0.0015,note:'Max 60°C'},
+  CPVCt:{n:'CPVC',std:'ASTM F441 / DIN 8079',maxT:93,minT:-40,corr:'Excellent',eps:0.0015,note:'Elevated temp BESS'},
+  NY12t:{n:'Nylon 12 (PA12)',std:'DIN 73378 / ISO 7628',maxT:100,minT:-40,corr:'Good',eps:0.0015,note:'Hydraulic small bore'}
+};
+
+// ── Fluid properties ───────────────────────────────────────────────────────
+function fluidProps(type,pct,T){
+  if(type==='water'){const d=[[-20,994,3.24,4.18,0.574],[-10,998,1.79,4.19,0.578],[0,999.8,1.79,4.219,0.561],[10,999.7,1.307,4.193,0.580],[20,998.2,1.002,4.182,0.598],[30,995.7,0.797,4.179,0.615],[40,992.2,0.653,4.179,0.630],[50,988.1,0.547,4.181,0.644],[60,983.2,0.466,4.185,0.654]];return interp(d,T);}
+  if(type==='air'){const d=[[-20,1.395,0.0162,1.006,0.0228],[-10,1.342,0.0174,1.006,0.0235],[0,1.293,0.0171,1.005,0.0242],[10,1.247,0.0178,1.005,0.0250],[20,1.205,0.0183,1.005,0.0257],[30,1.165,0.0187,1.005,0.0264],[40,1.127,0.0190,1.007,0.0272],[50,1.093,0.0196,1.007,0.0279],[60,1.060,0.0202,1.008,0.0287]];return interp(d,T);}
+  if(type==='R410A'){const d=[[-40,1310,0.28,1.46,0.110],[-20,1243,0.23,1.51,0.101],[0,1172,0.19,1.58,0.091],[10,1134,0.17,1.63,0.086],[20,1094,0.16,1.70,0.080],[30,1050,0.14,1.78,0.074],[40,1001,0.13,1.89,0.067]];return interp(d,T);}
+  if(type==='R134a'){const d=[[-40,1294,0.45,1.26,0.113],[-20,1225,0.35,1.30,0.104],[0,1147,0.27,1.36,0.094],[10,1106,0.24,1.40,0.089],[20,1063,0.21,1.46,0.083],[30,1017,0.18,1.53,0.077],[40,966,0.16,1.62,0.071]];return interp(d,T);}
+  return glycolProps(type,pct,T);
+}
+function interp(d,T){
+  let lo=d[0],hi=d[d.length-1];
+  for(let i=0;i<d.length-1;i++){if(d[i][0]<=T&&T<=d[i+1][0]){lo=d[i];hi=d[i+1];break;}}
+  const f=lo[0]===hi[0]?0:(T-lo[0])/(hi[0]-lo[0]);
+  return{rho:lo[1]+(hi[1]-lo[1])*f,mu:lo[2]+(hi[2]-lo[2])*f,cp:lo[3]+(hi[3]-lo[3])*f,k:lo[4]+(hi[4]-lo[4])*f};
+}
+function glycolProps(type,pct,T){
+  const c=pct/100,isEG=type==='EG';
+  const rhoMix=998.2*(1-c)+(isEG?1113:1040)*c-c*(1-c)*(isEG?35:20);
+  const rho=rhoMix+(isEG?-0.55:-0.48)*(T-20);
+  const muW=1.002*Math.exp(-0.0248*(T-20));
+  const muG=(isEG?16.1:42.0)*Math.exp(-0.05*(T-20));
+  const mu=Math.exp((1-c)*Math.log(muW)+c*Math.log(muG));
+  const cp=4.182*(1-c)+(isEG?2.39:2.51)*c;
+  const k=0.598*(1-c)+(isEG?0.258:0.200)*c-c*(1-c)*0.05;
+  return{rho:Math.max(rho,700),mu:Math.max(mu,0.3),cp,k:Math.max(k,0.15)};
+}
+
+// ── Hydraulics ────────────────────────────────────────────────────────────
+function churchill(Re,eps_D){
+  if(Re<1)return 64;
+  const A=Math.pow(2.457*Math.log(1/(Math.pow(7/Re,0.9)+0.27*eps_D)),16);
+  const B=Math.pow(37530/Re,16);
+  return 8*Math.pow(Math.pow(8/Re,12)+1/Math.pow(A+B,1.5),1/12);
+}
+function calcHydro(ID_mm,mdot,rho,mu_Pas,L,K,eps_mm){
+  const D=ID_mm/1e3,A=Math.PI/4*D*D;
+  const V=mdot/(rho*A),Re=rho*V*D/mu_Pas;
+  const f=churchill(Re,eps_mm/1e3/D);
+  const dpm=f*(1/D)*0.5*rho*V*V;
+  const dpTot=(dpm*L+K*0.5*rho*V*V)/1000;
+  let regime='Turbulent';if(Re<2300)regime='Laminar';else if(Re<4000)regime='Transitional';
+  return{V,Re,f,dpm,dpTot,regime};
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function getMdot(fEl,uEl,rho){
+  const v=parseFloat(fEl.value)||0,u=uEl.value;
+  if(u==='kgs')return v;if(u==='m3hr')return v*rho/3600;if(u==='Lmin')return v*rho/60000;return v;
+}
+function showConv(fEl,uEl,rho,cEl){
+  const v=parseFloat(fEl.value)||0,u=uEl.value;
+  let kgs,m3hr,Lmin;
+  if(u==='kgs'){kgs=v;m3hr=v*3600/rho;Lmin=v*60000/rho;}
+  else if(u==='m3hr'){kgs=v*rho/3600;m3hr=v;Lmin=v*1000/60;}
+  else{kgs=v*rho/60000;m3hr=v*60/1000;Lmin=v;}
+  const o=[];
+  if(u!=='kgs')o.push(kgs.toFixed(4)+' kg/s');
+  if(u!=='m3hr')o.push(m3hr.toFixed(3)+' m³/hr');
+  if(u!=='Lmin')o.push(Lmin.toFixed(2)+' L/min');
+  cEl.textContent='= '+o.join('  ·  ');
+}
+function pipeDims(dn,sch){
+  const db=PIPE_DB[dn];if(!db)return null;
+  const sk=SCH_MAP[sch]||40,t=db.t[sk]||db.t[40];
+  return{OD:db.OD,t,ID:db.OD-2*t};
+}
+function showMatInfo(mat,el){
+  const cCls=mat.corr.startsWith('Excellent')?'b-ok':mat.corr.startsWith('Good')?'b-info':'b-danger';
+  el.innerHTML=`<strong style="color:var(--navy);font-size:12px">${mat.n}</strong><br>
+  <span style="font-size:10px">${mat.std}</span><br>
+  Temp: ${mat.minT}°C to ${mat.maxT}°C &nbsp;·&nbsp; ε = ${mat.eps} mm<br>
+  Corrosion: <span class="badge ${cCls}" style="margin-top:3px">${mat.corr.split('—')[0].trim()}</span><br>
+  <em style="font-size:10px">${mat.note}</em>`;
+}
+function statusHTML(V){
+  if(V>3)return'<div class="status-pill danger"><span class="status-dot"></span>Velocity too high — erosion risk (>3 m/s)</div>';
+  if(V>2)return'<div class="status-pill warn"><span class="status-dot"></span>Above recommended BESS range (0.5–2.0 m/s)</div>';
+  if(V<0.5)return'<div class="status-pill warn"><span class="status-dot"></span>Low velocity — sedimentation risk (<0.5 m/s)</div>';
+  return'<div class="status-pill ok"><span class="status-dot"></span>Within recommended BESS range (0.5–2.0 m/s)</div>';
+}
+function mc(label,val,unit,cls){
+  return`<div class="metric-card ${cls}"><div class="metric-label">${label}</div><div class="metric-value">${val}</div><div class="metric-unit">${unit}</div></div>`;
+}
+function dr(l,v){return`<tr><td>${l}</td><td>${v}</td></tr>`;}
+function velBadge(v){
+  const cls=v>3?'b-danger':v<0.5?'b-warn':v>2?'b-warn':'b-ok';
+  return`<span class="badge ${cls}">${v.toFixed(2)}</span>`;
+}
+function regimeBadge(r){
+  const cls=r==='Laminar'?'b-info':r==='Transitional'?'b-warn':'b-ok';
+  return`<span class="badge ${cls}">${r}</span>`;
+}
+
+// ── Section switching ─────────────────────────────────────────────────────
+function switchSection(s,tabBtn){
+  ['pipe','tube','about'].forEach(id=>{
+    document.getElementById('sec-'+id).classList.toggle('act',id===s);
+    document.getElementById('tab-'+id).classList.toggle('act',id===s);
+    document.getElementById('nav-'+id).classList.toggle('act',id===s);
+  });
+}
+
+// ── PIPE ──────────────────────────────────────────────────────────────────
+function getPProps(){
+  return fluidProps(document.getElementById('p-fluid').value,parseFloat(document.getElementById('p-gly').value)||30,parseFloat(document.getElementById('p-temp').value)||10);
+}
+function pFluidChange(){
+  const t=document.getElementById('p-fluid').value;
+  document.getElementById('p-gly-row').style.display=(t==='EG'||t==='PG')?'block':'none';
+  pUpdateProps();
+}
+function pUpdateProps(){
+  const p=getPProps();
+  document.getElementById('p-rho').textContent=p.rho.toFixed(1);
+  document.getElementById('p-mu').textContent=p.mu.toFixed(3);
+  document.getElementById('p-cp').textContent=p.cp.toFixed(3);
+  document.getElementById('p-k').textContent=p.k.toFixed(3);
+  pConvert();
+}
+function pConvert(){showConv(document.getElementById('p-flow'),document.getElementById('p-funit'),getPProps().rho,document.getElementById('p-conv'));}
+function pMatChange(){showMatInfo(PIPE_MAT[document.getElementById('p-mat').value],document.getElementById('p-mat-info'));renderPipeDimTable();}
+function renderPipeDimTable(){
+  const dn=parseInt(document.getElementById('p-dn').value);
+  const sch=document.getElementById('p-sch').value;
+  let h='<table class="dim-table"><thead><tr><th>Sch</th><th>OD</th><th>t</th><th>ID</th><th>A mm²</th></tr></thead><tbody>';
+  ['5S','10S','40S','80S','160'].forEach(sk=>{
+    const d=pipeDims(dn,sk);if(!d)return;
+    const A=(Math.PI/4*d.ID*d.ID).toFixed(0);
+    const lbl=sk==='40S'?'40S/Std':sk==='80S'?'80S/XS':sk;
+    h+=`<tr class="${sk===sch?'sel':''}"><td>${lbl}</td><td>${d.OD}</td><td>${d.t.toFixed(2)}</td><td>${d.ID.toFixed(1)}</td><td>${A}</td></tr>`;
+  });
+  h+='</tbody></table>';
+  document.getElementById('p-dim-tbl').innerHTML=h;
+}
+function pCalc(){
+  const p=getPProps(),rho=p.rho,mu=p.mu/1000;
+  const eps=PIPE_MAT[document.getElementById('p-mat').value].eps;
+  const mdot=getMdot(document.getElementById('p-flow'),document.getElementById('p-funit'),rho);
+  const L=parseFloat(document.getElementById('p-len').value)||10;
+  const K=parseFloat(document.getElementById('p-k2').value)||5;
+  const dn=parseInt(document.getElementById('p-dn').value);
+  const sch=document.getElementById('p-sch').value;
+  const dim=pipeDims(dn,sch);if(!dim||dim.ID<=0)return;
+  const r=calcHydro(dim.ID,mdot,rho,mu,L,K,eps);
+  const T=parseFloat(document.getElementById('p-temp').value);
+  const mat=PIPE_MAT[document.getElementById('p-mat').value];
+  const tempOK=T>=mat.minT&&T<=mat.maxT;
+  const m3hr=(mdot*3600/rho).toFixed(3),Lmin=(mdot*60000/rho).toFixed(2);
+  document.getElementById('p-status').innerHTML=statusHTML(r.V);
+  const vCl=r.V>3?'m-danger':r.V>2||r.V<0.5?'m-warn':'m-ok';
+  const reCl=r.Re<2300?'m-info':r.Re<4000?'m-warn':'m-ok';
+  document.getElementById('p-metrics').innerHTML=
+    mc('Velocity',r.V.toFixed(2),'m/s',vCl)+mc('ΔP total',r.dpTot.toFixed(2),'kPa','m-info')+
+    mc('ΔP/m',r.dpm.toFixed(1),'Pa/m','m-info')+mc('Re',Math.round(r.Re).toLocaleString(),r.regime,reCl);
+  const dpFric=(r.dpm*L/1000).toFixed(3),dpMin=(K*0.5*rho*r.V*r.V/1000).toFixed(3);
+  document.getElementById('p-detail').innerHTML=
+    dr('Selected',`DN ${dn} Sch ${sch}`)+dr('OD×t×ID',`${dim.OD}×${dim.t.toFixed(2)}×${dim.ID.toFixed(1)} mm`)+
+    dr('Mass flow',`${mdot.toFixed(4)} kg/s`)+dr('','= '+m3hr+' m³/hr · '+Lmin+' L/min')+
+    dr('Velocity',r.V.toFixed(3)+' m/s')+dr('Re / regime',Math.round(r.Re).toLocaleString()+' / '+r.regime)+
+    dr('Churchill f',r.f.toFixed(5))+dr('ΔP friction',dpFric+' kPa')+dr('ΔP minor',dpMin+' kPa')+
+    dr('ΔP total','<strong>'+r.dpTot.toFixed(3)+' kPa</strong>')+
+    dr('Temp check',`<span class="badge ${tempOK?'b-ok':'b-danger'}">${tempOK?'OK':'⚠ Out of range'}</span>`);
+  let scan='';
+  DN_LIST.forEach(d=>{
+    const dim2=pipeDims(d,'40S');if(!dim2||dim2.ID<=0)return;
+    const r2=calcHydro(dim2.ID,mdot,rho,mu,L,K,eps);
+    const best=r2.V>=0.5&&r2.V<=2.0&&r2.Re>=4000;
+    scan+=`<tr class="${best?'rec':''}"><td>DN${d}</td><td>${dim2.ID.toFixed(1)}</td><td>${velBadge(r2.V)}</td><td>${r2.dpm.toFixed(0)}</td><td>${(r2.Re/1000).toFixed(1)}k</td></tr>`;
+  });
+  document.getElementById('p-scan').innerHTML=scan;
+  document.getElementById('p-results').style.display='block';
+  document.getElementById('p-results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── TUBE ──────────────────────────────────────────────────────────────────
+function getTProps(){
+  return fluidProps(document.getElementById('t-fluid').value,parseFloat(document.getElementById('t-gly').value)||30,parseFloat(document.getElementById('t-temp').value)||10);
+}
+function tFluidChange(){
+  const t=document.getElementById('t-fluid').value;
+  document.getElementById('t-gly-row').style.display=(t==='EG'||t==='PG')?'block':'none';
+  tUpdateProps();
+}
+function tUpdateProps(){
+  const p=getTProps();
+  document.getElementById('t-rho').textContent=p.rho.toFixed(1);
+  document.getElementById('t-mu').textContent=p.mu.toFixed(3);
+  document.getElementById('t-cp').textContent=p.cp.toFixed(3);
+  document.getElementById('t-k').textContent=p.k.toFixed(3);
+  tConvert();tGeoDisplay();
+}
+function tConvert(){showConv(document.getElementById('t-flow'),document.getElementById('t-funit'),getTProps().rho,document.getElementById('t-conv'));}
+function tMatChange(){showMatInfo(TUBE_MAT[document.getElementById('t-mat').value],document.getElementById('t-mat-info'));}
+function tMethodChange(){
+  const m=document.getElementById('t-method').value;
+  document.getElementById('t-OD-inputs').style.display=m==='OD_t'?'block':'none';
+  document.getElementById('t-ID-inputs').style.display=m==='ID_only'?'block':'none';
+  tGeoDisplay();
+}
+function getTubeID(){
+  const m=document.getElementById('t-method').value;
+  if(m==='ID_only')return parseFloat(document.getElementById('t-id-direct').value)||10;
+  return parseFloat(document.getElementById('t-od').value)-(2*parseFloat(document.getElementById('t-wt').value));
+}
+function tGeoDisplay(){
+  const m=document.getElementById('t-method').value;
+  const ID=getTubeID();
+  const A=(Math.PI/4*ID*ID).toFixed(1);
+  let h=`<table class="dim-table"><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody>`;
+  if(m==='OD_t'){
+    const OD=parseFloat(document.getElementById('t-od').value);
+    const t=parseFloat(document.getElementById('t-wt').value);
+    h+=`<tr><td>OD</td><td>${OD.toFixed(2)} mm</td></tr><tr><td>Wall t</td><td>${t.toFixed(2)} mm</td></tr>`;
+  }
+  h+=`<tr class="sel"><td><strong>ID</strong></td><td><strong>${ID.toFixed(2)} mm</strong></td></tr><tr><td>Area</td><td>${A} mm²</td></tr></tbody></table>`;
+  document.getElementById('t-geo-display').innerHTML=h;
+}
+function tCalc(){
+  const p=getTProps(),rho=p.rho,mu=p.mu/1000;
+  const eps=TUBE_MAT[document.getElementById('t-mat').value].eps;
+  const mdot=getMdot(document.getElementById('t-flow'),document.getElementById('t-funit'),rho);
+  const L=parseFloat(document.getElementById('t-len').value)||3;
+  const K=parseFloat(document.getElementById('t-k2').value)||3;
+  const ID=getTubeID();if(ID<=0)return;
+  const r=calcHydro(ID,mdot,rho,mu,L,K,eps);
+  const T=parseFloat(document.getElementById('t-temp').value);
+  const mat=TUBE_MAT[document.getElementById('t-mat').value];
+  const tempOK=T>=mat.minT&&T<=mat.maxT;
+  const m3hr=(mdot*3600/rho).toFixed(3),Lmin=(mdot*60000/rho).toFixed(2);
+  const tw=parseFloat(document.getElementById('t-wt').value)||1.0;
+  document.getElementById('t-status').innerHTML=statusHTML(r.V);
+  const vCl=r.V>3?'m-danger':r.V>2||r.V<0.5?'m-warn':'m-ok';
+  const reCl=r.Re<2300?'m-info':r.Re<4000?'m-warn':'m-ok';
+  document.getElementById('t-metrics').innerHTML=
+    mc('Velocity',r.V.toFixed(2),'m/s',vCl)+mc('ΔP total',r.dpTot.toFixed(2),'kPa','m-info')+
+    mc('ΔP/m',r.dpm.toFixed(1),'Pa/m','m-info')+mc('Re',Math.round(r.Re).toLocaleString(),r.regime,reCl);
+  const dpFric=(r.dpm*L/1000).toFixed(3),dpMin=(K*0.5*rho*r.V*r.V/1000).toFixed(3);
+  const gRow=document.getElementById('t-method').value==='OD_t'
+    ?dr('OD×t×ID',`${document.getElementById('t-od').value}×${tw}×${ID.toFixed(2)} mm`)
+    :dr('ID (direct)',ID.toFixed(2)+' mm');
+  document.getElementById('t-detail').innerHTML=
+    dr('Material',mat.n)+gRow+dr('Mass flow',`${mdot.toFixed(4)} kg/s`)+
+    dr('','= '+m3hr+' m³/hr · '+Lmin+' L/min')+
+    dr('Velocity',r.V.toFixed(3)+' m/s')+dr('Re / regime',Math.round(r.Re).toLocaleString()+' / '+r.regime)+
+    dr('Churchill f',r.f.toFixed(5))+dr('ΔP friction',dpFric+' kPa')+dr('ΔP minor',dpMin+' kPa')+
+    dr('ΔP total','<strong>'+r.dpTot.toFixed(3)+' kPa</strong>')+
+    dr('Roughness ε',eps+' mm')+
+    dr('Temp check',`<span class="badge ${tempOK?'b-ok':'b-danger'}">${tempOK?'OK':'⚠ Out of range'}</span>`);
+  let scan='';
+  TUBE_ODS.forEach(od=>{
+    const idS=od-2*tw;if(idS<=0)return;
+    const r2=calcHydro(idS,mdot,rho,mu,L,K,eps);
+    const best=r2.V>=0.5&&r2.V<=2.0&&r2.Re>=4000;
+    scan+=`<tr class="${best?'rec':''}"><td>${od}</td><td>${idS.toFixed(1)}</td><td>${velBadge(r2.V)}</td><td>${r2.dpm.toFixed(0)}</td><td>${(r2.Re/1000).toFixed(1)}k</td></tr>`;
+  });
+  document.getElementById('t-scan').innerHTML=scan;
+  document.getElementById('t-results').style.display='block';
+  document.getElementById('t-results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── PWA & Install ─────────────────────────────────────────────────────────
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('install-bar').style.display='flex';
+});
+document.getElementById('install-btn').addEventListener('click',async()=>{
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  const{outcome}=await deferredPrompt.userChoice;
+  deferredPrompt=null;
+  document.getElementById('install-bar').style.display='none';
+});
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+pFluidChange();pMatChange();renderPipeDimTable();
+tFluidChange();tMatChange();tGeoDisplay();
+</script>
+</body>
+</html>
